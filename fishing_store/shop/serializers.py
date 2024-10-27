@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Category, Product
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
 
@@ -17,6 +18,26 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )
         return user
 
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # Добавьте дополнительные поля в токен
+        token['username'] = user.username
+        token['email'] = user.email
+        token['is_staff'] = user.is_staff
+
+        return token
+    
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        # Добавляем поле is_staff в ответ
+        data['is_staff'] = self.user.is_staff
+
+        return data
+    
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
