@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product
+from .models import Brand, Category, Product, Cart, CartItem
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -39,11 +39,38 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
     
 class CategorySerializer(serializers.ModelSerializer):
+    subcategories = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     class Meta:
         model = Category
-        fields = '__all__'
-
+        fields = ['id', 'name', 'description', 'parent', 'subcategories']
+  
 class ProductSerializer(serializers.ModelSerializer):
+    brand_name = serializers.CharField(source='brand.name', read_only=True)
+    
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = ['id', 'name', 'description', 'price', 'stock', 'available', 'category', 'brand', 'brand_name', 'created_at', 'updated_at', 'image']
+
+    def to_representation(self, instance):
+        """Добавляем отладочный вывод перед возвратом данных"""
+        representation = super().to_representation(instance)
+        print(f"[DEBUG] Serialized Product Data: {representation}")
+        return representation
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = ['id', 'product', 'quantity']
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Cart
+        fields = ['id', 'user', 'items']
+        
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = ['id', 'name']
