@@ -57,11 +57,23 @@ class ProductSerializer(serializers.ModelSerializer):
         print(f"[DEBUG] Serialized Product Data: {representation}")
         return representation
 
+class SimpleProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id','name', 'price', 'image']  # Указываем только нужные поля
 
 class CartItemSerializer(serializers.ModelSerializer):
+    product = SimpleProductSerializer(read_only=True)  # Отображаем дополнительную информацию о продукте при GET
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)  # Используем product_id для записи при POST
+
     class Meta:
         model = CartItem
-        fields = ['id', 'product', 'quantity']
+        fields = ['id', 'product', 'quantity', 'product_id']  # product_id для записи, product для чтения
+
+    def create(self, validated_data):
+        product = validated_data.pop('product_id')  # Извлекаем ID продукта из данных запроса
+        cart_item = CartItem.objects.create(product=product, **validated_data)  # Создаем CartItem
+        return cart_item
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
