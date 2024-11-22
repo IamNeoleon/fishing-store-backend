@@ -31,8 +31,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class ProductFilter(filters.FilterSet):
     price_min = filters.NumberFilter(field_name="price", lookup_expr='gte')
     price_max = filters.NumberFilter(field_name="price", lookup_expr='lte')
-    brands = filters.BaseInFilter(field_name='brand__id', lookup_expr='in')  # Фильтр по ID брендов
-    category = filters.NumberFilter(field_name='category__id')  # Фильтр по категории
+    brands = filters.BaseInFilter(field_name='brand__id', lookup_expr='in')
+    category = filters.NumberFilter(field_name='category__id')
     
     class Meta:
         model = Product
@@ -48,9 +48,6 @@ class ProductViewSet(viewsets.ModelViewSet):
     ordering = ['price']
 
     def get_queryset(self):
-        """
-        Метод для фильтрации товаров по категориям, включая родительские и дочерние категории.
-        """
         queryset = super().get_queryset()
         category_id = self.request.query_params.get('category')
 
@@ -58,15 +55,12 @@ class ProductViewSet(viewsets.ModelViewSet):
             try:
                 category = Category.objects.get(id=category_id)
                 if category.parent is None:
-                    # Если категория — родительская, добавляем ее и все дочерние категории
                     subcategory_ids = category.subcategories.values_list('id', flat=True)
                     all_category_ids = [category.id] + list(subcategory_ids)
                     queryset = queryset.filter(category__id__in=all_category_ids)
                 else:
-                    # Если категория — дочерняя, фильтруем только по этой категории
                     queryset = queryset.filter(category=category)
             except Category.DoesNotExist:
-                # Возвращаем пустой queryset, если категория не найдена
                 return Product.objects.none()
 
         return queryset

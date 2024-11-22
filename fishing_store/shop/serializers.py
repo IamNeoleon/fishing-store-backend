@@ -23,7 +23,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
 
-        # Добавьте дополнительные поля в токен
         token['username'] = user.username
         token['email'] = user.email
         token['is_staff'] = user.is_staff
@@ -33,7 +32,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
 
-        # Добавляем поле is_staff в ответ
         data['is_staff'] = self.user.is_staff
 
         return data
@@ -63,16 +61,16 @@ class SimpleProductSerializer(serializers.ModelSerializer):
         fields = ['id','name', 'price', 'image']  # Указываем только нужные поля
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product = SimpleProductSerializer(read_only=True)  # Отображаем дополнительную информацию о продукте при GET
-    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)  # Используем product_id для записи при POST
+    product = SimpleProductSerializer(read_only=True)  
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)  
 
     class Meta:
         model = CartItem
-        fields = ['id', 'product', 'quantity', 'product_id']  # product_id для записи, product для чтения
+        fields = ['id', 'product', 'quantity', 'product_id']  
 
     def create(self, validated_data):
-        product = validated_data.pop('product_id')  # Извлекаем ID продукта из данных запроса
-        cart_item = CartItem.objects.create(product=product, **validated_data)  # Создаем CartItem
+        product = validated_data.pop('product_id')
+        cart_item = CartItem.objects.create(product=product, **validated_data)  
         return cart_item
 
 class CartSerializer(serializers.ModelSerializer):

@@ -49,7 +49,8 @@ INSTALLED_APPS = [
 	'shop',
     'rest_framework',
 	'corsheaders',
-    'django_filters'
+    'django_filters',
+	'django_extensions'
 ]
 
 AUTH_USER_MODEL = 'shop.CustomUser'
@@ -62,6 +63,7 @@ CORS_ALLOW_METHODS = [
     "GET",
     "POST",
     "PUT",
+	"PATCH", 
     "DELETE",
     "OPTIONS"
 ]
@@ -73,7 +75,10 @@ REST_FRAMEWORK = {
 CORS_ALLOW_HEADERS = [
     "content-type",
     "authorization",
+	"x-csrftoken"
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 MIDDLEWARE = [
 	'corsheaders.middleware.CorsMiddleware',
