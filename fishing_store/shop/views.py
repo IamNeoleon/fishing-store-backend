@@ -42,10 +42,11 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAdminOrReadOnly]
-    filter_backends = [DjangoFilterBackend, drf_filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, drf_filters.OrderingFilter, drf_filters.SearchFilter]
     filterset_class = ProductFilter
     ordering_fields = ['price']
     ordering = ['price']
+    search_fields = ['name']
 
     def get_queryset(self):
         queryset = super().get_queryset()
