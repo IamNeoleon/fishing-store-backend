@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Brand, CustomUser, Product, Category, Cart, CartItem
+from .models import Brand, CustomUser, Product, Category, Cart, CartItem, Order
 
 # Регистрация кастомной модели пользователя
 class CustomUserAdmin(UserAdmin):
@@ -36,4 +36,9 @@ class CartItemAdmin(admin.ModelAdmin):
 class BrandAdmin(admin.ModelAdmin):
     list_display = ('id', 'name')
     search_fields = ('name',)
+    
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('user', 'address', 'status')
+    search_fields = ('user',)
     

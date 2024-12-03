@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Brand, Category, Product, Cart, CartItem
+from .models import Brand, Category, Product, Cart, CartItem, Order, OrderItem
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -84,3 +84,17 @@ class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model = Brand
         fields = ['id', 'name']
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = SimpleProductSerializer(read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'quantity', 'price']
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ['id', 'user', 'created_at', 'total_amount', 'address', 'personal_info', 'status', 'items']

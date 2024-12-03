@@ -1,8 +1,9 @@
 from rest_framework import viewsets, generics
+from .models import Order, OrderItem
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .models import Brand, Category, Product, Cart, CartItem
-from .serializers import BrandSerializer, CategorySerializer, ProductSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer, CartSerializer, CartItemSerializer
+from .models import Brand, Category, Order, Product, Cart, CartItem
+from .serializers import BrandSerializer, CategorySerializer, OrderSerializer, ProductSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer, CartSerializer, CartItemSerializer
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
@@ -10,6 +11,8 @@ from .permissions import IsAdminOrReadOnly  # Импортируем новый 
 from django_filters.rest_framework import DjangoFilterBackend  # Импортируем DjangoFilterBackend
 from django_filters import rest_framework as filters  # Импортируем фильтры
 from rest_framework import filters as drf_filters  # Импортируем фильтры из DRF
+from django.db.models import Sum
+from django.db.models import F
 
 User = get_user_model()  # Получаем модель пользователя
 
@@ -118,3 +121,62 @@ class BrandViewSet(viewsets.ModelViewSet):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
     permission_classes = [IsAdminOrReadOnly]  # Или другая политика, которую вы используете
+
+class OrderViewSet(viewsets.ModelViewSet):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        cart = request.user.cart
+        cart_items = cart.items.all()
+
+        if not cart_items.exists(): 
+            return Response({"detail": "Cart is empty"}, status=400)
+
+        # Используем корректный импорт F
+        total_amount = cart_items.aggregate(
+            total=Sum(F('quantity') * F('product__price'))
+        )['total']
+
+        # Создаем заказ
+        order = Order.objects.create(
+            user=request.user,
+            total_amount=total_amount,
+            address=request.data.get('address'),
+            personal_info=request.data.get('personal_info'),
+        )
+
+        # Создаем позиции заказа
+        for item in cart_items:
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price=item.product.price,
+            )
+
+        # Очищаем корзину
+        cart_items.delete()
+
+        return Response(OrderSerializer(order).data, status=201)
+
+class AdminOrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()  # Получаем все заказы
+    serializer_class = OrderSerializer
+    permission_classes = [IsAdminUser]  # Доступ только для администраторов
+
+    def get_queryset(self):
+        # Администратор может получить все заказы
+        return Order.objects.all()
+
+class UserOrdersViewSet(viewsets.ViewSet):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        orders = Order.objects.filter(user=self.request.user)
+        serializer = self.serializer_class(orders, many=True)
+        return Response(serializer.data)
